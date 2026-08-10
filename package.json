@@ -1,0 +1,26 @@
+{
+  "name": "@visitorapi/personalize",
+  "version": "0.1.0",
+  "description": "Personalization engine + GTM template: show/hide or swap on-page content by visitor location, language, and currency",
+  "main": "engine.js",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/visitorapi/visitor-api-personalize.git"
+  },
+  "keywords": [
+    "personalization",
+    "gtm",
+    "google tag manager",
+    "geotargeting",
+    "localization"
+  ],
+  "author": "VisitorAPI",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/visitorapi/visitor-api-personalize/issues"
+  },
+  "homepage": "https://www.visitorapi.com"
+}
