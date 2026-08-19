@@ -111,6 +111,7 @@ function defaultNavigate(url) {
 function run(rules, visitorData, options = {}) {
   const doc = options.doc || (typeof document !== "undefined" ? document : undefined);
   const navigate = options.navigate || defaultNavigate;
+  const applied = [];
 
   rules.forEach((rule) => {
     if (validateRule(rule).length > 0) {
@@ -124,7 +125,10 @@ function run(rules, visitorData, options = {}) {
     } else {
       applyAction(rule, doc);
     }
+    applied.push({ field: rule.field, action: rule.action, selector: rule.selector });
   });
+
+  return applied;
 }
 
 module.exports = { resolveFieldValue, matchesRule, applyAction, run };

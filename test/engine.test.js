@@ -200,3 +200,30 @@ test("run skips a rule that fails schema validation", () => {
   );
   assert.equal(navigatedTo, null);
 });
+
+test("run returns the rules it actually applied", () => {
+  const doc = fakeDocument({ ".us-banner": [fakeElement()] });
+  const applied = run(
+    [
+      { field: "country", value: "US", action: "show", selector: ".us-banner" },
+      { field: "country", value: "CA", action: "hide", selector: ".us-banner" },
+    ],
+    { countryCode: "US" },
+    { doc }
+  );
+  assert.deepEqual(applied, [
+    { field: "country", action: "show", selector: ".us-banner" },
+  ]);
+});
+
+test("run omits invalid and non-matching rules from its return value", () => {
+  const applied = run(
+    [
+      { field: "country", value: "US", action: "redirect" }, // invalid: missing content
+      { field: "country", value: "CA", action: "redirect", content: "https://example.com/ca" }, // non-matching
+    ],
+    { countryCode: "US" },
+    { navigate: () => {} }
+  );
+  assert.deepEqual(applied, []);
+});

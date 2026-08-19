@@ -79,10 +79,14 @@ engine (`engine.js`) skips invalid rules rather than throwing, so one
 bad rule in a marketer's config doesn't break every other rule on the
 page.
 
+## How this maps onto the GTM template
+
+`template.tpl`'s `rules` field is a `SIMPLE_TABLE` (one row per
+rule) with columns matching this schema's properties directly,
+except `value`, which is a single comma-separated text column split
+into an array in the template's sandboxed JS before being handed to
+the engine.
+
 ## Open, not yet decided here
 
 - FOUC handling (tracked separately — [#3](https://github.com/visitorapi/visitor-api-personalize/issues/3))
-- Where visitor data comes from at runtime (independent SDK call vs.
-  reading the base `gtm-template`'s dataLayer push) — tracked in
-  [#4](https://github.com/visitorapi/visitor-api-personalize/issues/4)
-  since it's a GTM-template-level wiring decision, not a schema one.
