@@ -18,8 +18,8 @@ everything you need here.
   been deployed: `dist/personalize.js` hasn't been uploaded to
   `cdn.visitorapi.com`, `template.tpl` hasn't been imported into a
   real GTM container, and it hasn't been tested end-to-end in GTM
-  Preview mode yet. See the GitHub issues for what's left (FOUC
-  handling, cross-browser test harness, Gallery submission, docs).
+  Preview mode yet. See the GitHub issues for what's left
+  (cross-browser test harness, Gallery submission, docs).
 - **Planning doc:** the Notion task for this initiative has the full
   background, v1 scope, and open-decision log —
   [Personalised GTM Template](https://app.notion.com/p/3b58ec76106881518c09e4815b6a5b7c).
@@ -68,10 +68,17 @@ GTM Preview mode.
 
 ## Open design decisions
 
-- **FOUC handling** (still open, issue #3) — hiding personalized
-  elements until the engine applies rules needs a blocking snippet +
-  CSS strategy (similar to A/B testing tools); affects Core Web
-  Vitals.
+- ~~**FOUC handling**~~ **Decided:** `antiflicker.js` (built to
+  `dist/personalize-antiflicker.js`) is a *separate* snippet the
+  marketer pastes directly into `<head>`, before the GTM container
+  snippet — GTM itself fires too late to prevent the flash on its
+  own. It hides a marketer-configured selector list via `opacity:0`
+  and reveals it either when `engine.js`'s `run()` finishes (it calls
+  `window.VisitorAPIPersonalizeReveal()`) or after a timeout safety
+  net, whichever comes first. Tradeoff: that selector list is
+  separate from, and has to be kept in sync by hand with, the
+  selectors used in the GTM template's rules table — see README.md's
+  "Preventing flash of original content" section.
 - ~~**Rule authoring UX**~~ **Decided:** `template.tpl` uses a
   `SIMPLE_TABLE` field (one row per rule, columns for field/value/
   action/selector/attribute/content) rather than free-form repeating

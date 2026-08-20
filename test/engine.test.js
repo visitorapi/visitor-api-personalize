@@ -216,6 +216,27 @@ test("run returns the rules it actually applied", () => {
   ]);
 });
 
+test("run calls the reveal hook after applying rules", () => {
+  let revealCalled = false;
+  const doc = fakeDocument({ ".us-banner": [fakeElement()] });
+  run(
+    [{ field: "country", value: "US", action: "show", selector: ".us-banner" }],
+    { countryCode: "US" },
+    { doc, reveal: () => { revealCalled = true; } }
+  );
+  assert.equal(revealCalled, true);
+});
+
+test("run calls the reveal hook even when zero rules matched", () => {
+  let revealCalled = false;
+  run(
+    [{ field: "country", value: "CA", action: "show", selector: ".ca-banner" }],
+    { countryCode: "US" },
+    { doc: fakeDocument({}), reveal: () => { revealCalled = true; } }
+  );
+  assert.equal(revealCalled, true);
+});
+
 test("run omits invalid and non-matching rules from its return value", () => {
   const applied = run(
     [

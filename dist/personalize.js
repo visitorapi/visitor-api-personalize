@@ -240,9 +240,16 @@ function defaultNavigate(url) {
   }
 }
 
+function defaultReveal() {
+  if (typeof window !== "undefined" && typeof window.VisitorAPIPersonalizeReveal === "function") {
+    window.VisitorAPIPersonalizeReveal();
+  }
+}
+
 function run(rules, visitorData, options = {}) {
   const doc = options.doc || (typeof document !== "undefined" ? document : undefined);
   const navigate = options.navigate || defaultNavigate;
+  const reveal = options.reveal || defaultReveal;
   const applied = [];
 
   rules.forEach((rule) => {
@@ -259,6 +266,8 @@ function run(rules, visitorData, options = {}) {
     }
     applied.push({ field: rule.field, action: rule.action, selector: rule.selector });
   });
+
+  reveal();
 
   return applied;
 }
