@@ -33,7 +33,8 @@ that lets marketers author those rules without writing JavaScript.
 ├── dist/personalize-antiflicker.js       # generated -- goes on the CDN, loaded directly by the page (not via GTM)
 ├── template.tpl                          # the GTM Custom Template
 ├── metadata.yaml                         # Gallery metadata (filled in at first submission)
-└── test/                                 # node:test suite for all of the above
+├── test/                                 # node:test suite (fake DOM, fast)
+└── e2e/                                  # Playwright suite (real Chromium/Firefox/WebKit)
 ```
 
 ## Running the tests
@@ -43,6 +44,28 @@ npm test
 ```
 
 Runs `node --test test/*.test.js` -- no dependencies, no install step.
+These test `schema.js`/`engine.js`/`antiflicker.js` directly against
+fake `document`/`window` objects (fast, no browser needed).
+
+## Running the cross-browser tests
+
+```bash
+npm install
+npx playwright install chromium firefox webkit  # first time only
+npm run build                                    # regenerates dist/, which the fixtures load
+npm run test:e2e
+```
+
+Runs `e2e/*.spec.js` against real Chromium, Firefox, and WebKit via
+Playwright, loading the actual built `dist/personalize.js` and
+`dist/personalize-antiflicker.js` into local HTML fixtures
+(`e2e/fixtures/`). This is the one thing `node:test`'s fake DOM
+can't cover: real `querySelectorAll`/style/attribute behavior across
+real browser engines. It calls `window.VisitorAPIPersonalize(...)`
+directly with hand-built rules and visitor data -- it doesn't
+exercise `template.tpl` or the real VisitorAPI network call, since
+neither can run outside GTM/a live project. Real GTM Preview-mode
+testing is still a separate, manual step (see below).
 
 ## Rebuilding the CDN bundle
 

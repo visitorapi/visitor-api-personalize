@@ -13,13 +13,13 @@ everything you need here.
 - **Product context:** requires a VisitorAPI project ID and domain
   allowlist (see `https://app.visitorapi.com`), same as the base
   `visitor-api-google-tag-manager` template.
-- **Status:** early development — rule schema, engine, and the GTM
-  template exist and pass their tests (`npm test`), but nothing has
-  been deployed: `dist/personalize.js` hasn't been uploaded to
-  `cdn.visitorapi.com`, `template.tpl` hasn't been imported into a
-  real GTM container, and it hasn't been tested end-to-end in GTM
-  Preview mode yet. See the GitHub issues for what's left
-  (cross-browser test harness, Gallery submission, docs).
+- **Status:** early development — rule schema, engine, GTM template,
+  and a real-browser Playwright suite (`npm run test:e2e`, covering
+  Chromium/Firefox/WebKit) all exist and pass, but nothing has been
+  deployed: `dist/*.js` hasn't been uploaded to `cdn.visitorapi.com`,
+  `template.tpl` hasn't been imported into a real GTM container, and
+  it hasn't been tested end-to-end in GTM Preview mode yet. See the
+  GitHub issues for what's left (Gallery submission, docs).
 - **Planning doc:** the Notion task for this initiative has the full
   background, v1 scope, and open-decision log —
   [Personalised GTM Template](https://app.notion.com/p/3b58ec76106881518c09e4815b6a5b7c).
