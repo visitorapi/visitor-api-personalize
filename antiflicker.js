@@ -1,27 +1,36 @@
-// Hides the given selectors via a synchronous <style> tag so
-// personalized elements don't flash their original content while
-// visitor-api.js/personalize.js are still loading. Meant to be
-// pasted directly in <head>, BEFORE the GTM container snippet --
-// GTM itself loads too late (after the browser has already started
+// Hides elements marked with TARGET_CLASS via a synchronous <style>
+// tag so personalized elements don't flash their original content
+// while visitor-api.js/personalize.js are still loading. Meant to be
+// pasted directly in <head>, BEFORE the GTM container snippet -- GTM
+// itself loads too late (after the browser has already started
 // painting) to prevent the flash on its own.
+//
+// Deliberately NOT a marketer-configured selector list: that has to
+// be kept in sync by hand with whatever a GTM rule targets, which in
+// practice means a page edit for every new campaign. Instead, a
+// fixed, unchanging class name is the opt-in -- add it once to any
+// element that might ever be personalized, and it stays protected
+// across all future campaigns with no further page changes. Tradeoff:
+// a classed element hides briefly even on loads where no rule ends up
+// matching that visitor, since this snippet can't know in advance
+// whether personalization will apply.
 //
 // Always installs a timeout-based auto-reveal as a safety net: if
 // personalization never calls reveal() (network failure, ad
 // blocker, JS error), content must not stay hidden forever.
 
-function installAntiFlicker(selectors, timeoutMs, options) {
+var TARGET_CLASS = "vapi-personalize-target";
+
+function installAntiFlicker(timeoutMs, options) {
   options = options || {};
   var doc = options.doc || document;
   var win = options.win || window;
   var setTimeoutFn = options.setTimeout || setTimeout;
-
-  if (!selectors || selectors.length === 0) {
-    return null;
-  }
+  var className = options.className || TARGET_CLASS;
 
   var styleEl = doc.createElement("style");
   styleEl.setAttribute("data-visitorapi-personalize-antiflicker", "");
-  styleEl.textContent = selectors.join(",") + "{opacity:0 !important}";
+  styleEl.textContent = "." + className + "{opacity:0 !important}";
   doc.head.appendChild(styleEl);
 
   var revealed = false;
@@ -41,4 +50,4 @@ function installAntiFlicker(selectors, timeoutMs, options) {
   return reveal;
 }
 
-module.exports = { installAntiFlicker };
+module.exports = { installAntiFlicker, TARGET_CLASS };

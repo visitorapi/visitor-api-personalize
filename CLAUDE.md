@@ -118,18 +118,27 @@ ones first, or something else hasn't been decided.
 
 ## Open design decisions
 
-- ~~**FOUC handling**~~ **Decided:** `antiflicker.js` (built to
-  `dist/personalize-antiflicker.js`) is a *separate* snippet the
-  marketer pastes directly into `<head>`, before the GTM container
-  snippet — GTM itself fires too late to prevent the flash on its
-  own. It hides a marketer-configured selector list via `opacity:0`
-  and reveals it either when `engine.js`'s `run()` finishes (it calls
-  `window.VisitorAPIPersonalizeReveal()`) or after a timeout safety
-  net, whichever comes first. Tradeoff: that selector list is
-  separate from, and has to be kept in sync by hand with, the
-  selectors used across whichever templates' rule tables you've
-  configured — see README.md's "Preventing flash of original content"
-  section.
+- ~~**FOUC handling**~~ **Decided, then revised:** `antiflicker.js`
+  (built to `dist/personalize-antiflicker.js`) is a *separate*
+  snippet the marketer pastes directly into `<head>`, before the GTM
+  container snippet — GTM itself fires too late to prevent the flash
+  on its own. It reveals hidden content either when `engine.js`'s
+  `run()` finishes (it calls `window.VisitorAPIPersonalizeReveal()`)
+  or after a timeout safety net, whichever comes first — that part
+  hasn't changed. What *did* change, after real use surfaced it as
+  impractical (see
+  [#11](https://github.com/visitorapi/visitor-api-personalize/issues/11)):
+  it originally hid a marketer-maintained selector list
+  (`window.visitorApiPersonalizeSelectors`) that had to be kept in
+  sync by hand with every GTM campaign — meaning a page edit per
+  campaign. Replaced with a fixed, unchanging class
+  (`vapi-personalize-target`, `antiflicker.TARGET_CLASS`): marketers
+  add it once to any element that might ever be personalized, and
+  future campaigns targeting that element need zero further page
+  edits. Tradeoff: a classed element hides briefly even on loads
+  where no rule ends up matching that visitor, since the snippet
+  can't know in advance whether personalization will apply — see
+  README.md's "Preventing flash of original content" section.
 - ~~**Rule authoring UX**~~ **Decided, then revised:** originally one
   generic `SIMPLE_TABLE` (field/value/action/selector/attribute/
   content) in a single template. Real GTM testing showed GTM can't

@@ -129,30 +129,45 @@ container snippet:
 
 ```html
 <script>
-  window.visitorApiPersonalizeSelectors = [".us-banner", ".eu-price"];
   window.visitorApiPersonalizeTimeout = 3000; // ms; safety net if personalization never fires
 </script>
 <script src="https://cdn.visitorapi.com/personalize-antiflicker.js"></script>
 ```
 
-This hides exactly those selectors (via `opacity:0`, so layout space
-is still reserved -- no jump on reveal) the instant it runs, then
-reveals them either when `engine.js`'s `run()` finishes (it calls
-`window.VisitorAPIPersonalizeReveal()` automatically once it's done
-applying rules) or after the timeout, whichever comes first. The
-timeout exists so a network failure, ad blocker, or JS error never
-leaves content permanently hidden.
+Then mark any element that might ever be personalized with the fixed
+`vapi-personalize-target` class, once, when you build that part of
+the page:
 
-**Known tradeoff:** the selector list here has to be kept in sync by
-hand with the selectors used across whichever GTM templates' rule
-tables you've configured -- they're separate config surfaces (one
-lives on the page, one lives in GTM) because the anti-flicker
-snippet has to run before GTM does. Only list selectors for rules
-where the *original* content
-would look wrong being visible even briefly (a swapped price, a
-country-specific banner) -- don't blanket-list every selector in
-every rule, since anything listed here is invisible for up to the
-full timeout if personalization is slow or fails.
+```html
+<img class="hero-image vapi-personalize-target" src="/original.jpg">
+```
+
+This is a **class-based convention, not a marketer-maintained
+selector list** -- deliberately. A selector list has to be kept in
+sync by hand with whatever a GTM rule targets, which in practice
+means a page edit every time you launch a new campaign. The class is
+a one-time markup decision instead: add it once when you build a
+personalizable zone (a hero banner, a price display, a CTA), and
+every future campaign that targets that same element needs zero
+further page edits -- only genuinely new elements need the class
+added.
+
+The snippet hides every `.vapi-personalize-target` element (via
+`opacity:0`, so layout space is still reserved -- no jump on reveal)
+the instant it runs, then reveals them either when `engine.js`'s
+`run()` finishes (it calls `window.VisitorAPIPersonalizeReveal()`
+automatically once it's done applying rules) or after the timeout,
+whichever comes first. The timeout exists so a network failure, ad
+blocker, or JS error never leaves content permanently hidden.
+
+**Known tradeoff:** a classed element hides briefly even on page
+loads where no rule ends up matching that visitor, since this
+snippet can't know in advance whether personalization will apply --
+it only knows the element *might* be targeted. In practice this is a
+non-issue: the hide window is short (normally well under the
+timeout) and it just reveals unchanged. Don't add the class to
+content that's never personalized -- it gains nothing and adds an
+unnecessary (if brief) hide.
 
 ## Testing a GTM template
 
