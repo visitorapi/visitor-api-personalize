@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { installAntiFlicker } = require("../antiflicker");
+const { installAntiFlicker, TARGET_CLASS } = require("../antiflicker");
 
 function fakeStyleElement() {
   return { attributes: {}, textContent: "", parentNode: null, setAttribute(name, value) {
@@ -28,26 +28,18 @@ function fakeDocument() {
   };
 }
 
-test("installAntiFlicker does nothing when no selectors are configured", () => {
+test("installAntiFlicker appends an opacity:0 style rule for the fixed target class", () => {
   const doc = fakeDocument();
   const win = {};
-  const reveal = installAntiFlicker([], 3000, { doc, win, setTimeout: () => {} });
-  assert.equal(reveal, null);
-  assert.equal(doc.head.children, undefined);
-});
-
-test("installAntiFlicker appends an opacity:0 style rule for the given selectors", () => {
-  const doc = fakeDocument();
-  const win = {};
-  installAntiFlicker([".us-banner", ".eu-price"], 3000, { doc, win, setTimeout: () => {} });
+  installAntiFlicker(3000, { doc, win, setTimeout: () => {} });
   assert.equal(doc.head.children.length, 1);
-  assert.equal(doc.head.children[0].textContent, ".us-banner,.eu-price{opacity:0 !important}");
+  assert.equal(doc.head.children[0].textContent, `.${TARGET_CLASS}{opacity:0 !important}`);
 });
 
 test("installAntiFlicker exposes a reveal function on win that removes the style element", () => {
   const doc = fakeDocument();
   const win = {};
-  installAntiFlicker([".us-banner"], 3000, { doc, win, setTimeout: () => {} });
+  installAntiFlicker(3000, { doc, win, setTimeout: () => {} });
   assert.equal(typeof win.VisitorAPIPersonalizeReveal, "function");
   win.VisitorAPIPersonalizeReveal();
   assert.equal(doc.head.children.length, 0);
@@ -56,7 +48,7 @@ test("installAntiFlicker exposes a reveal function on win that removes the style
 test("installAntiFlicker's reveal is idempotent (safe to call twice)", () => {
   const doc = fakeDocument();
   const win = {};
-  const reveal = installAntiFlicker([".us-banner"], 3000, { doc, win, setTimeout: () => {} });
+  const reveal = installAntiFlicker(3000, { doc, win, setTimeout: () => {} });
   reveal();
   assert.doesNotThrow(() => reveal());
 });
@@ -66,7 +58,7 @@ test("installAntiFlicker schedules an auto-reveal after the given timeout", () =
   const win = {};
   let scheduledFn = null;
   let scheduledDelay = null;
-  installAntiFlicker([".us-banner"], 2500, {
+  installAntiFlicker(2500, {
     doc,
     win,
     setTimeout: (fn, delay) => {
@@ -84,7 +76,7 @@ test("installAntiFlicker defaults the timeout to 3000ms", () => {
   const doc = fakeDocument();
   const win = {};
   let scheduledDelay = null;
-  installAntiFlicker([".us-banner"], undefined, {
+  installAntiFlicker(undefined, {
     doc,
     win,
     setTimeout: (fn, delay) => {
@@ -92,4 +84,11 @@ test("installAntiFlicker defaults the timeout to 3000ms", () => {
     },
   });
   assert.equal(scheduledDelay, 3000);
+});
+
+test("installAntiFlicker allows overriding the target class (for testing/advanced use)", () => {
+  const doc = fakeDocument();
+  const win = {};
+  installAntiFlicker(3000, { doc, win, setTimeout: () => {}, className: "custom-class" });
+  assert.equal(doc.head.children[0].textContent, ".custom-class{opacity:0 !important}");
 });

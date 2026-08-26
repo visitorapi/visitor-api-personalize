@@ -45,7 +45,6 @@ test("the antiflicker bundle auto-installs using window config on load", () => {
   const fakeDoc = { head, createElement: () => styleEl };
   let scheduledDelay = null;
   const fakeWin = {
-    visitorApiPersonalizeSelectors: [".us-banner"],
     visitorApiPersonalizeTimeout: 5000,
     document: fakeDoc,
     setTimeout: (fn, delay) => { scheduledDelay = delay; },
