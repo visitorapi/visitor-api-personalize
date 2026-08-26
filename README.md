@@ -1,24 +1,53 @@
 # VisitorAPI Personalization
 
-A GTM template + engine for personalizing on-page content by visitor
-location, language, and currency — built on
+Six GTM templates + one shared engine for personalizing on-page
+content by visitor location, language, and currency — built on
 [VisitorAPI](https://www.visitorapi.com).
 
 Marketers configure rules (e.g. "country = US → show this banner",
 "currency = EUR → swap this price") directly in the Google Tag
 Manager UI, with no custom code.
 
-**Status:** early development. See the
+**Status:** core functionality verified end-to-end in a real GTM
+container. See the
 [GitHub issues](https://github.com/visitorapi/visitor-api-personalize/issues)
 for current scope.
+
+## Which template do I use?
+
+There isn't one generic "Personalize" template — each use case is
+its own GTM Custom Template, in `templates/`:
+
+| Template | Use it to... |
+|---|---|
+| `replace-image.tpl` | Swap an `<img>`'s `src` |
+| `replace-link.tpl` | Swap an `<a>`'s `href` |
+| `replace-text.tpl` | Swap an element's text |
+| `show-hide.tpl` | Show or hide an element |
+| `redirect.tpl` | Redirect the visitor |
+| `replace-attribute.tpl` | Swap any other attribute (advanced escape hatch) |
+
+Why six instead of one: GTM's repeating table field
+(`SIMPLE_TABLE`) can't hide columns per row based on another column
+in that same row, so a single generic template with a "field ->
+value -> action -> selector -> attribute -> content" table means the
+Attribute and Content columns show for every row regardless of
+whether that row's action needs them — confusing, and confirmed so
+in real testing. Splitting by use case means every column in every
+template is always relevant. See `CLAUDE.md` for the fuller
+rationale and history.
+
+Add one tag per kind of personalization you want; each template's
+table supports multiple rows for repeats of that same kind (e.g. 5
+different image swaps in one `replace-image.tpl` tag).
 
 ## How it relates to the base VisitorAPI GTM template
 
 [`visitor-api-google-tag-manager`](https://github.com/visitorapi/visitor-api-google-tag-manager)
 detects visitor data and pushes it into the GTM dataLayer. This repo
 builds a personalization layer on top: a small engine that reads
-that data and applies content rules to the page, plus a GTM template
-that lets marketers author those rules without writing JavaScript.
+that data and applies content rules to the page, plus GTM templates
+that let marketers author those rules without writing JavaScript.
 
 ## What's in the repo
 
@@ -26,13 +55,20 @@ that lets marketers author those rules without writing JavaScript.
 .
 ├── continents.js                       # ISO country -> continent lookup
 ├── schema.js                            # rule schema + validation (see SCHEMA.md)
-├── engine.js                             # condition matching + DOM action execution
+├── engine.js                             # condition matching + DOM action execution -- shared by every template
 ├── antiflicker.js                        # FOUC-prevention: hide/reveal via a <style> tag
 ├── build.js                              # bundles the above into the two dist/ files below
-├── dist/personalize.js                   # generated -- goes on the CDN, loaded by the GTM tag
+├── dist/personalize.js                   # generated -- goes on the CDN, loaded by every GTM template
 ├── dist/personalize-antiflicker.js       # generated -- goes on the CDN, loaded directly by the page (not via GTM)
-├── template.tpl                          # the GTM Custom Template
-├── metadata.yaml                         # Gallery metadata (filled in at first submission)
+├── templates/
+│   ├── use-cases.js                      # per-template config: table columns + buildRules() logic
+│   ├── generate.js                       # emits the six .tpl files below from use-cases.js
+│   ├── replace-image.tpl                 # generated GTM Custom Templates --
+│   ├── replace-link.tpl                  # see "Which template do I use?" above
+│   ├── replace-text.tpl
+│   ├── show-hide.tpl
+│   ├── redirect.tpl
+│   └── replace-attribute.tpl
 ├── test/                                 # node:test suite (fake DOM, fast)
 └── e2e/                                  # Playwright suite (real Chromium/Firefox/WebKit)
 ```
@@ -63,9 +99,10 @@ Playwright, loading the actual built `dist/personalize.js` and
 can't cover: real `querySelectorAll`/style/attribute behavior across
 real browser engines. It calls `window.VisitorAPIPersonalize(...)`
 directly with hand-built rules and visitor data -- it doesn't
-exercise `template.tpl` or the real VisitorAPI network call, since
-neither can run outside GTM/a live project. Real GTM Preview-mode
-testing is still a separate, manual step (see below).
+exercise any of the `templates/*.tpl` files or the real VisitorAPI
+network call, since neither can run outside GTM/a live project. Real
+GTM Preview-mode testing is still a separate, manual step (see
+below).
 
 ## Rebuilding the CDN bundle
 
@@ -107,30 +144,39 @@ timeout exists so a network failure, ad blocker, or JS error never
 leaves content permanently hidden.
 
 **Known tradeoff:** the selector list here has to be kept in sync by
-hand with the selectors used in the GTM template's rules table --
-they're two separate config surfaces (one lives on the page, one
-lives in GTM) because the anti-flicker snippet has to run before GTM
-does. Only list selectors for rules where the *original* content
+hand with the selectors used across whichever GTM templates' rule
+tables you've configured -- they're separate config surfaces (one
+lives on the page, one lives in GTM) because the anti-flicker
+snippet has to run before GTM does. Only list selectors for rules
+where the *original* content
 would look wrong being visible even briefly (a swapped price, a
 country-specific banner) -- don't blanket-list every selector in
 every rule, since anything listed here is invisible for up to the
 full timeout if personalization is slow or fails.
 
-## Testing the GTM template itself
+## Testing a GTM template
 
-1. `npm run build`, then upload `dist/personalize.js` to
-   `cdn.visitorapi.com` so `https://cdn.visitorapi.com/personalize.js`
-   resolves.
-2. In GTM, Templates -> Tag Templates -> New -> import `template.tpl`
-   (or paste its contents into the code editor).
-3. Use the template editor's own **Test** tab first -- it runs the
-   `___TESTS___` scenario in this file without needing a live
+1. `npm run build`, then upload `dist/personalize.js` and
+   `dist/personalize-antiflicker.js` to `cdn.visitorapi.com` so both
+   URLs resolve.
+2. `npm run build:templates` (or use the committed `templates/*.tpl`
+   files directly -- they're generated but checked in, same as
+   `dist/*.js`).
+3. In GTM, Templates -> Tag Templates -> New -> import whichever
+   `templates/<use-case>.tpl` you need (or paste its contents into
+   the code editor). Repeat per use case -- there's no single
+   "install everything" template.
+4. Use the template editor's own **Test** tab first -- it runs the
+   `___TESTS___` scenario in that file without needing a live
    container.
-4. Add the tag to a test container with a real `projectId` and at
-   least one rule, then use GTM's **Preview** mode against a real
+5. Add the tag to a test container with a real `projectId` and at
+   least one rule row, then use GTM's **Preview** mode against a real
    page: watch for the `visitor-api-personalize-applied` (or
    `visitor-api-personalize-error`) event in the dataLayer/Preview
    panel to confirm it fired and how many rules matched.
+
+Confirmed working end-to-end this way with `show-hide.tpl` against a
+real GTM container.
 
 ## License
 

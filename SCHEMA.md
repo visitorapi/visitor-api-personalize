@@ -79,13 +79,17 @@ engine (`engine.js`) skips invalid rules rather than throwing, so one
 bad rule in a marketer's config doesn't break every other rule on the
 page.
 
-## How this maps onto the GTM template
+## How this maps onto the GTM templates
 
-`template.tpl`'s `rules` field is a `SIMPLE_TABLE` (one row per
-rule) with columns matching this schema's properties directly,
-except `value`, which is a single comma-separated text column split
-into an array in the template's sandboxed JS before being handed to
-the engine.
+There isn't one GTM template exposing this full schema directly --
+`templates/*.tpl` are six use-case-specific templates (see that
+repo's `CLAUDE.md`), each with a `SIMPLE_TABLE` scoped to just the
+fields its use case needs (e.g. `replace-image.tpl`'s table has no
+generic "action" or "attribute" column at all -- those are hardcoded
+in its `buildRules()`). Every template's `rules` table has a
+`value` column as a single comma-separated text field, split into an
+array in that template's sandboxed JS before being handed to the
+engine as this schema's `value`.
 
 ## Open, not yet decided here
 

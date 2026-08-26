@@ -1,4 +1,4 @@
-﻿___TERMS_OF_SERVICE___
+___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -13,13 +13,15 @@ ___INFO___
   "id": "cvt_temp_public_id",
   "version": 1,
   "securityGroups": [],
-  "displayName": "VisitorAPI Personalize",
-  "categories": ["UTILITY"],
+  "displayName": "VisitorAPI Personalize - Replace Attribute (Advanced)",
+  "categories": [
+    "UTILITY"
+  ],
   "brand": {
     "id": "brand_dummy",
     "displayName": ""
   },
-  "description": "Show/hide or swap on-page content based on visitor country, region, city, continent, currency, language, browser, OS, and device type -- no code required.",
+  "description": "Swap any element attribute based on visitor country, language, currency, etc. Use Replace Image or Replace Link instead for the common src/href cases.",
   "containerContexts": [
     "WEB"
   ]
@@ -39,7 +41,7 @@ ___TEMPLATE_PARAMETERS___
   {
     "type": "SIMPLE_TABLE",
     "name": "rules",
-    "displayName": "Personalization rules",
+    "displayName": "Rules",
     "simpleTableColumns": [
       {
         "defaultValue": "country",
@@ -47,15 +49,42 @@ ___TEMPLATE_PARAMETERS___
         "name": "field",
         "type": "SELECT",
         "selectItems": [
-          { "value": "country", "displayValue": "Country" },
-          { "value": "region", "displayValue": "Region" },
-          { "value": "city", "displayValue": "City" },
-          { "value": "continent", "displayValue": "Continent" },
-          { "value": "currency", "displayValue": "Currency" },
-          { "value": "language", "displayValue": "Language" },
-          { "value": "browser", "displayValue": "Browser" },
-          { "value": "os", "displayValue": "OS" },
-          { "value": "deviceType", "displayValue": "Device type" }
+          {
+            "value": "country",
+            "displayValue": "Country"
+          },
+          {
+            "value": "region",
+            "displayValue": "Region"
+          },
+          {
+            "value": "city",
+            "displayValue": "City"
+          },
+          {
+            "value": "continent",
+            "displayValue": "Continent"
+          },
+          {
+            "value": "currency",
+            "displayValue": "Currency"
+          },
+          {
+            "value": "language",
+            "displayValue": "Language"
+          },
+          {
+            "value": "browser",
+            "displayValue": "Browser"
+          },
+          {
+            "value": "os",
+            "displayValue": "OS"
+          },
+          {
+            "value": "deviceType",
+            "displayValue": "Device type"
+          }
         ]
       },
       {
@@ -65,19 +94,6 @@ ___TEMPLATE_PARAMETERS___
         "type": "TEXT"
       },
       {
-        "defaultValue": "show",
-        "displayName": "Action",
-        "name": "action",
-        "type": "SELECT",
-        "selectItems": [
-          { "value": "show", "displayValue": "Show element" },
-          { "value": "hide", "displayValue": "Hide element" },
-          { "value": "replaceText", "displayValue": "Replace text" },
-          { "value": "replaceAttribute", "displayValue": "Replace attribute" },
-          { "value": "redirect", "displayValue": "Redirect" }
-        ]
-      },
-      {
         "defaultValue": "",
         "displayName": "CSS selector",
         "name": "selector",
@@ -85,18 +101,18 @@ ___TEMPLATE_PARAMETERS___
       },
       {
         "defaultValue": "",
-        "displayName": "Attribute (for Replace attribute)",
+        "displayName": "Attribute name (e.g. href, src, alt)",
         "name": "attribute",
         "type": "TEXT"
       },
       {
         "defaultValue": "",
-        "displayName": "Content (new text / attribute value / redirect URL)",
-        "name": "content",
+        "displayName": "New value",
+        "name": "attributeValue",
         "type": "TEXT"
       }
     ],
-    "help": "Each row is one rule: field/value define the condition (e.g. Country = US), action/selector/attribute/content define what happens when it matches. Rules with the same field can be repeated as separate rows -- every matching rule runs, there's no first-match-wins."
+    "help": "Every matching rule runs -- there's no first-match-wins."
   }
 ]
 
@@ -133,14 +149,16 @@ function buildRules(rawRules) {
     rules.push({
       field: row.field,
       value: splitValues(row.value),
-      action: row.action,
+      action: 'replaceAttribute',
       selector: row.selector,
       attribute: row.attribute,
-      content: row.content
+      content: row.attributeValue
     });
   }
   return rules;
 }
+
+var rules = buildRules(data.rules || []);
 
 function pushDebugEvent(eventName, extra) {
   var dataLayerPush = createQueue('dataLayer');
@@ -152,8 +170,6 @@ function pushDebugEvent(eventName, extra) {
   }
   dataLayerPush(payload);
 }
-
-var rules = buildRules(data.rules || []);
 
 function onPersonalizeLoaded(visitorData) {
   return function () {
@@ -215,46 +231,118 @@ ___WEB_PERMISSIONS___
               {
                 "type": 3,
                 "mapKey": [
-                  { "type": 1, "string": "key" },
-                  { "type": 1, "string": "read" },
-                  { "type": 1, "string": "write" },
-                  { "type": 1, "string": "execute" }
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
                 ],
                 "mapValue": [
-                  { "type": 1, "string": "VisitorAPI" },
-                  { "type": 8, "boolean": true },
-                  { "type": 8, "boolean": false },
-                  { "type": 8, "boolean": true }
+                  {
+                    "type": 1,
+                    "string": "VisitorAPI"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
                 ]
               },
               {
                 "type": 3,
                 "mapKey": [
-                  { "type": 1, "string": "key" },
-                  { "type": 1, "string": "read" },
-                  { "type": 1, "string": "write" },
-                  { "type": 1, "string": "execute" }
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
                 ],
                 "mapValue": [
-                  { "type": 1, "string": "VisitorAPIPersonalize" },
-                  { "type": 8, "boolean": true },
-                  { "type": 8, "boolean": false },
-                  { "type": 8, "boolean": true }
+                  {
+                    "type": 1,
+                    "string": "VisitorAPIPersonalize"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
                 ]
               },
               {
                 "type": 3,
                 "mapKey": [
-                  { "type": 1, "string": "key" },
-                  { "type": 1, "string": "read" },
-                  { "type": 1, "string": "write" },
-                  { "type": 1, "string": "execute" }
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
                 ],
                 "mapValue": [
-                  { "type": 1, "string": "dataLayer" },
-                  { "type": 8, "boolean": true },
-                  { "type": 8, "boolean": true },
-                  { "type": 8, "boolean": false }
+                  {
+                    "type": 1,
+                    "string": "dataLayer"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
                 ]
               }
             ]
@@ -279,8 +367,14 @@ ___WEB_PERMISSIONS___
           "value": {
             "type": 2,
             "listItem": [
-              { "type": 1, "string": "https://cdn.visitorapi.com/visitor-api.js" },
-              { "type": 1, "string": "https://cdn.visitorapi.com/personalize.js" }
+              {
+                "type": 1,
+                "string": "https://cdn.visitorapi.com/visitor-api.js"
+              },
+              {
+                "type": 1,
+                "string": "https://cdn.visitorapi.com/personalize.js"
+              }
             ]
           }
         }
@@ -300,9 +394,16 @@ scenarios:
 - name: Test
   code: |-
     const mockData = {
-      // Mocked field values
-      projectId: 'cp7aHGexzLgytbJoyKTI',
-      rules: []
+      "projectId": "cp7aHGexzLgytbJoyKTI",
+      "rules": [
+        {
+          "field": "country",
+          "value": "US",
+          "selector": "video",
+          "attribute": "poster",
+          "attributeValue": "/us-poster.jpg"
+        }
+      ]
     };
 
     // Call runCode to run the template's code.
@@ -314,14 +415,11 @@ scenarios:
 
 ___NOTES___
 
-Created on 08/20/2026.
+Generated by templates/generate.js from templates/use-cases.js ("replace-attribute").
+Do not edit this file directly -- edit use-cases.js and regenerate.
 
 Depends on two CDN-hosted files loaded via injectScript, in sequence:
-1. https://cdn.visitorapi.com/visitor-api.js (existing, shared with the
-   base "VisitorAPI" template) -- fetches visitor data.
-2. https://cdn.visitorapi.com/personalize.js (this repo's dist/personalize.js,
-   built via `npm run build` from continents.js/schema.js/engine.js) --
-   matches rules against the visitor data and applies DOM actions.
-
-No thumbnail image yet -- add one before Community Template Gallery
-submission (tracked in issue #6).
+1. https://cdn.visitorapi.com/visitor-api.js (shared with every other
+   VisitorAPI template) -- fetches visitor data.
+2. https://cdn.visitorapi.com/personalize.js (from this repo's
+   dist/personalize.js) -- matches rules and applies DOM actions.
