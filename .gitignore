@@ -1,0 +1,6 @@
+.DS_Store
+node_modules
+
+# Worktrees for isolated feature work — never tracked.
+.worktree/
+.claude/worktrees/

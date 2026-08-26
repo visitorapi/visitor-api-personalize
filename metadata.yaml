@@ -1,0 +1,6 @@
+homepage: "https://www.visitorapi.com"
+# TODO: point at the personalization help article once it exists (website#21).
+documentation: "https://www.visitorapi.com/help-articles/google-tag-manager"
+# Filled in at first Community Template Gallery submission (issue #6) --
+# empty until then, since nothing has been submitted yet.
+versions: []
