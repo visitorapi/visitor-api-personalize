@@ -5,6 +5,7 @@
   "main": "engine.js",
   "scripts": {
     "build": "node build.js",
+    "build:templates": "node templates/generate.js",
     "test": "node --test test/*.test.js",
     "test:e2e": "playwright test"
   },
