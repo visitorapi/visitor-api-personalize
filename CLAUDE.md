@@ -109,11 +109,18 @@ only the GTM-facing config layer did. Regenerate with
 `dist/*.js`) so the `.tpl` files are directly importable without a
 build step.
 
-**Open, unresolved:** how Community Template Gallery submission (#6)
-works with six templates instead of one — conventionally one repo
-maps to one Gallery submission (see the sibling `gtm-template` repo).
-Whether that means six separate submissions, picking the highest-value
-ones first, or something else hasn't been decided.
+**Decided:** confirmed from Google's own docs that a Gallery
+submission requires exactly one `template.tpl` per repo — no
+exceptions. Six sibling repos now exist as frozen publish targets,
+one per template (`visitor-api-personalize-replace-image`,
+`-replace-link`, `-replace-text`, `-show-hide`, `-redirect`,
+`-replace-attribute` — see the brand `CLAUDE.md`'s "Personalize
+Gallery-submission repos" section for the full table and sync
+process). This repo stays the source of truth; those six only get a
+manual copy of the relevant `templates/<use-case>.tpl` when it
+changes. Actual submission to the Gallery
+(`tagmanager.google.com/gallery`) is a manual step per repo, not done
+yet as of this writing.
 
 ## v1 scope
 
