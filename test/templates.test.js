@@ -62,3 +62,80 @@ for (const useCase of USE_CASES) {
     assert.equal(matchesRule({ countryCode: "US" }, rule), true);
   });
 }
+
+// The shared sandboxed-JS boilerplate (permissions, injectScript
+// sequencing, dataLayer events) is byte-for-byte identical across
+// every template, so the ordering behavior below only needs proving
+// once against a representative template, not all six.
+function runSandboxedTemplate(useCase, { personalizeResolvesFirst }) {
+  const content = fs.readFileSync(path.join(TEMPLATES_DIR, `${useCase.id}.tpl`), "utf8");
+  const sandboxedJs = extractSection(content, "SANDBOXED_JS_FOR_WEB_TEMPLATE");
+
+  const pushed = [];
+  let deferredCb = null;
+  const fakeRequire = (name) => {
+    if (name === "queryPermission") return () => true;
+    if (name === "injectScript")
+      return (url, cb) => {
+        const isPersonalize = url.indexOf("personalize.js") !== -1;
+        if (isPersonalize === personalizeResolvesFirst) {
+          cb();
+        } else {
+          deferredCb = cb;
+        }
+      };
+    if (name === "copyFromWindow")
+      return (globalName) => {
+        if (globalName === "VisitorAPI") {
+          return (projectId, onSuccess) => onSuccess({ countryCode: "US" });
+        }
+        if (globalName === "VisitorAPIPersonalize") {
+          return (rules, visitorData) => {
+            pushed.push({ type: "personalize-called", rules, visitorData });
+            return [];
+          };
+        }
+      };
+    if (name === "createQueue") return () => (payload) => pushed.push(payload);
+  };
+  const data = {
+    projectId: "test",
+    rules: [useCase.testMockRow],
+    gtmOnSuccess: () => pushed.push("gtmOnSuccess"),
+  };
+
+  new Function("require", "data", sandboxedJs)(fakeRequire, data);
+  assert.ok(deferredCb, "expected the second injectScript callback to be deferred");
+  deferredCb();
+
+  return pushed;
+}
+
+test("sandboxed JS calls personalize() exactly once regardless of which injectScript resolves first (visitor data first)", () => {
+  const pushed = runSandboxedTemplate(USE_CASES[0], { personalizeResolvesFirst: false });
+  const calls = pushed.filter((p) => p && p.type === "personalize-called");
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].visitorData, { countryCode: "US" });
+});
+
+test("sandboxed JS calls personalize() exactly once regardless of which injectScript resolves first (personalize.js first)", () => {
+  const pushed = runSandboxedTemplate(USE_CASES[0], { personalizeResolvesFirst: true });
+  const calls = pushed.filter((p) => p && p.type === "personalize-called");
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].visitorData, { countryCode: "US" });
+});
+
+test("sandboxed JS calls gtmOnSuccess immediately, without waiting for either async load", () => {
+  const content = fs.readFileSync(path.join(TEMPLATES_DIR, `${USE_CASES[0].id}.tpl`), "utf8");
+  const sandboxedJs = extractSection(content, "SANDBOXED_JS_FOR_WEB_TEMPLATE");
+  const pushed = [];
+  const fakeRequire = (name) => {
+    if (name === "queryPermission") return () => true;
+    if (name === "injectScript") return () => {}; // never resolves
+    if (name === "copyFromWindow") return () => undefined;
+    if (name === "createQueue") return () => (payload) => pushed.push(payload);
+  };
+  const data = { projectId: "test", rules: [], gtmOnSuccess: () => pushed.push("gtmOnSuccess") };
+  new Function("require", "data", sandboxedJs)(fakeRequire, data);
+  assert.deepEqual(pushed, ["gtmOnSuccess"]);
+});

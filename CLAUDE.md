@@ -49,24 +49,32 @@ swap text, swap attributes, redirect) has to live in a small engine
 `injectScript`.
 
 Every template's sandboxed JS is a self-sufficient tag, not a
-dataLayer reader: it `injectScript`s `visitor-api.js` first (same
-CDN file the base `gtm-template` uses) to get visitor data, then
-`injectScript`s `personalize.js` and calls it directly via
+dataLayer reader: it `injectScript`s `visitor-api.js` (same CDN file
+the base `gtm-template` uses) to get visitor data, and `injectScript`s
+`personalize.js` — **in parallel, not one nested inside the other's
+callback**, since fetching visitor data and loading the engine script
+don't depend on each other. Whichever resolves last calls
 `copyFromWindow('VisitorAPIPersonalize')(rules, visitorData)` —
-mirroring exactly how the base template calls `VisitorAPI` (a
-direct function call after `copyFromWindow`, **not** `callInWindow`).
-This means marketers don't need the base template installed too, and
-it avoids `callInWindow`'s extra indirection. Each template's own
-`buildRules()` transforms its `SIMPLE_TABLE` rows (comma-split
-values, etc.) into the schema shape before handing them to the
-engine. A `visitor-api-personalize-applied` (or `-error`) `dataLayer`
-event fires afterward, carrying how many rules matched, for debugging
-in GTM Preview mode.
+mirroring exactly how the base template calls `VisitorAPI` (a direct
+function call after `copyFromWindow`, **not** `callInWindow`). This
+means marketers don't need the base template installed too, avoids
+`callInWindow`'s extra indirection, and removes a full network round
+trip from the critical path compared to loading them sequentially
+(the original design — real testing surfaced the resulting flicker as
+worth fixing, see
+[#13](https://github.com/visitorapi/visitor-api-personalize/issues/13)).
+Each template's own `buildRules()` transforms its `SIMPLE_TABLE` rows
+(comma-split values, etc.) into the schema shape before handing them
+to the engine. A `visitor-api-personalize-applied` (or `-error`)
+`dataLayer` event fires afterward, carrying how many rules matched,
+for debugging in GTM Preview mode.
 
-This plumbing (permissions, injectScript sequencing, dataLayer push)
-is byte-for-byte identical across all six templates — see "Six
+This plumbing (permissions, parallel injectScript loads, dataLayer
+push) is byte-for-byte identical across all six templates — see "Six
 templates, one engine" below for why, and how it's kept from
-drifting between copies.
+drifting between copies. `test/templates.test.js` simulates the GTM
+sandbox against both possible resolution orders to guard against this
+regressing back to sequential.
 
 ## Six templates, one engine
 

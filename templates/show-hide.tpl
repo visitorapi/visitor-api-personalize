@@ -173,32 +173,44 @@ function pushDebugEvent(eventName, extra) {
   dataLayerPush(payload);
 }
 
-function onPersonalizeLoaded(visitorData) {
-  return function () {
-    var personalize = copyFromWindow('VisitorAPIPersonalize');
-    if (typeof personalize === 'undefined') {
-      pushDebugEvent('visitor-api-personalize-error', {
-        visitorApiPersonalizeErrorMessage: 'personalize.js did not load'
-      });
-      return;
-    }
-    var applied = personalize(rules, visitorData);
-    pushDebugEvent('visitor-api-personalize-applied', {
-      visitorApiPersonalizeRulesApplied: applied.length
-    });
-  };
-}
+// visitor-api.js and personalize.js don't depend on each other, so
+// they're loaded in parallel (not one injectScript inside the
+// other's callback) -- personalize() only runs once BOTH the
+// visitor-data fetch and the engine script have resolved, whichever
+// finishes last.
+var personalizeReady = false;
+var visitorDataReady = false;
+var visitorData = null;
+var visitorDataError = null;
 
-function onVisitorData(visitorData) {
-  if (queryPermission('inject_script', personalizeUrl)) {
-    injectScript(personalizeUrl, onPersonalizeLoaded(visitorData));
+function tryRunPersonalize() {
+  if (!personalizeReady || !visitorDataReady) {
+    return;
   }
+  if (visitorDataError) {
+    pushDebugEvent('visitor-api-personalize-error', {
+      visitorApiPersonalizeErrorCode: visitorDataError.code,
+      visitorApiPersonalizeErrorMessage: visitorDataError.message
+    });
+    return;
+  }
+  var personalize = copyFromWindow('VisitorAPIPersonalize');
+  if (typeof personalize === 'undefined') {
+    pushDebugEvent('visitor-api-personalize-error', {
+      visitorApiPersonalizeErrorMessage: 'personalize.js did not load'
+    });
+    return;
+  }
+  var applied = personalize(rules, visitorData);
+  pushDebugEvent('visitor-api-personalize-applied', {
+    visitorApiPersonalizeRulesApplied: applied.length
+  });
 }
 
-function onVisitorError(errorCode, errorMessage) {
-  pushDebugEvent('visitor-api-personalize-error', {
-    visitorApiPersonalizeErrorCode: errorCode,
-    visitorApiPersonalizeErrorMessage: errorMessage
+if (queryPermission('inject_script', personalizeUrl)) {
+  injectScript(personalizeUrl, function () {
+    personalizeReady = true;
+    tryRunPersonalize();
   });
 }
 
@@ -206,7 +218,19 @@ if (queryPermission('inject_script', visitorApiUrl)) {
   injectScript(visitorApiUrl, function () {
     var api = copyFromWindow('VisitorAPI');
     if (typeof api !== 'undefined') {
-      api(data.projectId, onVisitorData, onVisitorError);
+      api(
+        data.projectId,
+        function (data_) {
+          visitorData = data_;
+          visitorDataReady = true;
+          tryRunPersonalize();
+        },
+        function (errorCode, errorMessage) {
+          visitorDataError = { code: errorCode, message: errorMessage };
+          visitorDataReady = true;
+          tryRunPersonalize();
+        }
+      );
     }
   });
 }
